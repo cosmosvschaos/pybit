@@ -232,7 +232,7 @@ class _V5HTTPManager:
             # Authenticate if we are using a private endpoint.
             if auth:
                 # Prepare signature.
-                timestamp = _helpers.generate_req_timestamp(sesson=self)
+                timestamp = _helpers.generate_req_timestamp(session=self)
                 signature = self._auth(
                     payload=req_params,
                     recv_window=recv_window,
