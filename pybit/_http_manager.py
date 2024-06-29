@@ -232,7 +232,7 @@ class _V5HTTPManager:
             # Authenticate if we are using a private endpoint.
             if auth:
                 # Prepare signature.
-                timestamp = _helpers.generate_timestamp()
+                timestamp = _helpers.generate_req_timestamp(sesson=self)
                 signature = self._auth(
                     payload=req_params,
                     recv_window=recv_window,
@@ -361,7 +361,7 @@ class _V5HTTPManager:
                         limit_reset_time = int(s.headers["X-Bapi-Limit-Reset-Timestamp"])
                         limit_reset_str = dt.fromtimestamp(limit_reset_time / 10**3).strftime(
                             "%H:%M:%S.%f")[:-3]
-                        delay_time = (int(limit_reset_time) - _helpers.generate_timestamp()) / 10**3
+                        delay_time = (int(limit_reset_time) - _helpers.generate_req_timestamp(session=self)) / 10**3
                         error_msg = (
                             f"API rate limit will reset at {limit_reset_str}. "
                             f"Sleeping for {int(delay_time * 10**3)} milliseconds"

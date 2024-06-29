@@ -1,7 +1,66 @@
 import time
 import re
 import copy
+import logging
+from functools import lru_cache
 
+@lru_cache(maxsize=1)
+def get_server_time_delay(session):
+    """
+    Fetch the Bybit server time and calculate the delay between the server time and the system time.
+
+    :param session: The session object used to communicate with the Bybit API.
+    :return: The delay in nanoseconds.
+    """
+    try:
+        response = session.get_server_time()
+        if response['retCode'] == 0:
+            server_time_nano = int(response['result']['timeNano'])
+            system_time_nano = int(time.time() * 1e9)
+            delay = server_time_nano - system_time_nano
+            logging.info(f"Calculated delay: {delay} nanoseconds")
+            return delay
+        else:
+            error_message = f"Error retrieving Bybit server time: {response['retMsg']}"
+            logging.error(error_message)
+            raise Exception(error_message)
+    except Exception as e:
+        error_message = f"Error retrieving Bybit server time: {e}"
+        logging.error(error_message)
+        raise
+
+def generate_req_timestamp(session):
+    """
+    Generate a request timestamp.
+
+    :param session: The session object used to communicate with the Bybit API.
+    :return: The request timestamp in milliseconds.
+    """
+    def get_current_utc_milliseconds():
+        """Returns the current UTC time in milliseconds since the epoch."""
+        epoch_time = time.time()
+        return int(epoch_time * 1000)
+
+    try:
+        if session:
+            try:
+                delay_nano = get_server_time_delay(session)
+                current_system_time_nano = int(time.time() * 1e9)
+                server_time_nano = current_system_time_nano + delay_nano
+                return server_time_nano // 1000000  # Convert nanoseconds to milliseconds
+            except Exception:
+                logging.error("Failed to get server time delay, falling back to UTC time.")
+        
+        # If there's no session or server time delay retrieval failed, use current UTC time
+        print("No session available, using UTC time as req_timestamp")
+        return get_current_utc_milliseconds()
+
+    except Exception as e:
+        utc_milliseconds = get_current_utc_milliseconds()
+        logging.error(f"Error generating req_timestamp: {e}, using UTC time: {utc_milliseconds}")
+        print(f"Error generating req_timestamp: {e}")
+
+        return utc_milliseconds  # Or another meaningful return value, as needed
 
 def generate_timestamp():
     """
